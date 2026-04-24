@@ -389,6 +389,7 @@ namespace Separador_de_Listas_de_Planejadores
                 lblStatus.Text = "Ocioso";
                 MessageBox.Show("Por favor, carregue o arquivo PDF antes de iniciar o processamento.");
                 return;
+
             }
             foreach (var pedido in lista)
             {
