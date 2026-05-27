@@ -36,6 +36,7 @@
             richtxtPainel = new RichTextBox();
             btnIniciarSep = new Button();
             lblStatus = new Label();
+            btnAtualizacoes = new Button();
             SuspendLayout();
             // 
             // btnCarregarXLS
@@ -110,11 +111,22 @@
             lblStatus.Text = "Status: Ocioso";
             lblStatus.Click += lblStatus_Click;
             // 
+            // btnAtualizacoes
+            // 
+            btnAtualizacoes.Location = new Point(439, 12);
+            btnAtualizacoes.Name = "btnAtualizacoes";
+            btnAtualizacoes.Size = new Size(84, 31);
+            btnAtualizacoes.TabIndex = 7;
+            btnAtualizacoes.Text = "Atualizações";
+            btnAtualizacoes.UseVisualStyleBackColor = true;
+            btnAtualizacoes.Click += btnAtualizacoes_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(542, 345);
+            Controls.Add(btnAtualizacoes);
             Controls.Add(lblStatus);
             Controls.Add(btnIniciarSep);
             Controls.Add(richtxtPainel);
@@ -138,5 +150,6 @@
         private RichTextBox richtxtPainel;
         private Button btnIniciarSep;
         private Label lblStatus;
+        private Button btnAtualizacoes;
     }
 }

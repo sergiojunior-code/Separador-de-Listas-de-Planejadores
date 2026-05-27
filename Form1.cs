@@ -1,5 +1,6 @@
 ﻿using ClosedXML.Excel;
 using DocumentFormat.OpenXml.Drawing.Diagrams;
+using DocumentFormat.OpenXml.Spreadsheet;
 using iText.Kernel.Pdf.Canvas.Parser;
 using iText.Kernel.Pdf.Canvas.Parser.Listener;
 using System.Runtime.CompilerServices;
@@ -14,10 +15,17 @@ namespace Separador_de_Listas_de_Planejadores
         public bool pdfCarregado = false;
         public string resumoFinal = "";
 
+        public string origem = "";
+        public string pastaOrigem = "";
+        public string nomeArquivo = "";
+        public string destinoAncoragem = "";
+        public string versao = "1.2";
+
         private List<Armazenar> listaArmazenar = new List<Armazenar>();
         List<string> pastasNaoEncontradas = new List<string>();
         public Form1()
         {
+
             InitializeComponent();
             planejadores.Add("Planejador: 24 - OBRAS");
             planejadores.Add("Planejador: 25 - FABRICA FERRAGENS");
@@ -29,25 +37,25 @@ namespace Separador_de_Listas_de_Planejadores
             planejadores.Add("Planejador: 31 - ILUMINACAO/ELETRICA");
             planejadores.Add("Planejador: 32 - ACRILICO");
             planejadores.Add("Planejador: 33 - ESPECIAIS");
-            
 
 
-    }
-    public class Armazenar
+
+        }
+        public class Armazenar
         {
             // Propriedades públicas
             public string OrdemCompra { get; set; }
             public string SubPlanejadores { get; set; }
             public string Planejadores { get; set; }
 
-            
+
             // Construtor
             public Armazenar(string ordemcompra, string subplanejadores, string planejadores)
             {
                 OrdemCompra = ordemcompra;
                 SubPlanejadores = subplanejadores;
                 Planejadores = planejadores;
-                
+
             }
         }
 
@@ -133,7 +141,7 @@ namespace Separador_de_Listas_de_Planejadores
                 richtxtPainel.ScrollToCaret();
                 excelCarregado = true;
                 lblAgExcel.Text = "Excel carregado com sucesso!";
-                excelPath = ofd.FileName;     
+                excelPath = ofd.FileName;
             }
             if (excelCarregado == true && pdfCarregado == true)
             {
@@ -152,21 +160,23 @@ namespace Separador_de_Listas_de_Planejadores
 
         private void CriarPDF(string ordemcompra)
         {
-            string origem = pdfPath;
-            string pastaOrigem = Path.GetDirectoryName(origem);
-            string nomeArquivo = Path.GetFileNameWithoutExtension(pdfPath);
+
+            origem = pdfPath;
+            pastaOrigem = Path.GetDirectoryName(origem);
+            nomeArquivo = Path.GetFileNameWithoutExtension(pdfPath);
+
+            destinoAncoragem = origem.Replace(nomeArquivo, "Lista de Planejador - Ancoragens");
 
             // Extrair números do pedido
-            string fourDigits = ordemcompra.Substring(0, 4);
-            string fiveDigits = ordemcompra.Substring(0, 5);
-            int firstDigits = 5;
+            //string fourDigits = ordemcompra.Substring(0, 4);
+            //string fiveDigits = ordemcompra.Substring(0, 5);
+            //int firstDigits = 5;
 
             //int tamanhoPrefixo = ordemcompra.Substring(0, ordemcompra.IndexOf(" - ")).Length;
             //if (tamanhoPrefixo == 7) firstDigits = 5;
             //else if (tamanhoPrefixo == 6) firstDigits = 4;
 
-            richtxtPainel.AppendText($"Prefixo detectado: {firstDigits}\n");
-            richtxtPainel.ScrollToCaret();
+
 
             // Extrair numAmbiente corretamente
             int indiceHifen = ordemcompra.IndexOf("- ");
@@ -176,7 +186,7 @@ namespace Separador_de_Listas_de_Planejadores
             richtxtPainel.ScrollToCaret();
 
             // Buscar diretórios de contratos filtrados
-            string prefixo = firstDigits == 5 ? fiveDigits : fourDigits;
+            string prefixo = ordemcompra.Substring(0, ordemcompra.IndexOf(" - ")).Trim();
             var diretorioContratos = Directory.GetDirectories(@"J:\Pedidos 2026", prefixo + "*");
 
             var numContrato = ordemcompra.Substring(0, ordemcompra.IndexOf(" - ")).Trim();
@@ -205,7 +215,7 @@ namespace Separador_de_Listas_de_Planejadores
                         diretorioContratos = Directory.GetDirectories(@"J:\Pedidos 2030", prefixo + "*");
                 }
             }
-            
+
 
             bool pastaEncontrada = false;
             string destino = string.Empty;
@@ -222,102 +232,133 @@ namespace Separador_de_Listas_de_Planejadores
                         destino = Path.Combine(pastaambiente, $"{ordemcompra} - Lista de Planejadores.pdf");
                         pastaEncontrada = true;
 
-                        richtxtPainel.AppendText($"Pasta encontrada para a ordem de compra {ordemcompra}: {pastaambiente}\n");
+                        richtxtPainel.AppendText($"Pasta encontrada para a ordem de compra {ordemcompra}: {pastaambiente}\n\n");
                         richtxtPainel.ScrollToCaret();
                         break;
                     }
                 }
-                if (pastaEncontrada) break;
+                if (pastaEncontrada == true) break;
             }
 
             // Se não encontrou, cria pasta no mesmo diretório do PDF
-            if (!pastaEncontrada)
+            if (pastaEncontrada == false)
             {
                 string pastaDestino = Path.Combine(pastaOrigem, ordemcompra);
                 if (!Directory.Exists(pastaDestino))
                     Directory.CreateDirectory(pastaDestino);
 
                 destino = Path.Combine(pastaDestino, $"{ordemcompra} - Lista de Planejadores.pdf");
-                richtxtPainel.AppendText($"Pasta não encontrada. Criando destino padrão: {destino}\n");
+                richtxtPainel.AppendText($"Pasta não encontrada. Criando destino padrão: {destino}\n\n");
                 richtxtPainel.ScrollToCaret();
             }
             if (File.Exists(destino))
-                File.Delete(destino);
+            {
+                try
+                {
+                    richtxtPainel.AppendText($"Arquivo existente encontrado. Excluindo: {destino}\n\n");
 
+                    File.Delete(destino);
+                }
+                catch (Exception ex)
+                {
+                    richtxtPainel.AppendText($"Erro ao excluir arquivo existente: {ex.Message}\n\n");
+                }
+                richtxtPainel.ScrollToCaret();
+            }
             // Criar PDF
             bool encontrou = false;
-            using (var pdfOrigem = new iText.Kernel.Pdf.PdfDocument(new iText.Kernel.Pdf.PdfReader(origem)))            
-            using (var pdfDestino = new iText.Kernel.Pdf.PdfDocument(new iText.Kernel.Pdf.PdfWriter(destino)))
+            try
             {
-                for (int i = 1; i <= pdfOrigem.GetNumberOfPages(); i++)
+                using (var pdfOrigem = new iText.Kernel.Pdf.PdfDocument(new iText.Kernel.Pdf.PdfReader(origem)))
+                using (var pdfDestino = new iText.Kernel.Pdf.PdfDocument(new iText.Kernel.Pdf.PdfWriter(destino)))
                 {
-                    var strategy = new iText.Kernel.Pdf.Canvas.Parser.Listener.SimpleTextExtractionStrategy();
-                    string texto = iText.Kernel.Pdf.Canvas.Parser.PdfTextExtractor.GetTextFromPage(pdfOrigem.GetPage(i), strategy);
-                    if (texto.IndexOf(ordemcompra, StringComparison.OrdinalIgnoreCase) >= 0)
+                    for (int i = 1; i <= pdfOrigem.GetNumberOfPages(); i++)
                     {
+                        var strategy = new iText.Kernel.Pdf.Canvas.Parser.Listener.SimpleTextExtractionStrategy();
+                        string texto = iText.Kernel.Pdf.Canvas.Parser.PdfTextExtractor.GetTextFromPage(pdfOrigem.GetPage(i), strategy);
 
-                        pdfOrigem.CopyPagesTo(i, i, pdfDestino);
-
-                        foreach (var planejador in planejadores)
+                        if (texto.IndexOf(ordemcompra, StringComparison.OrdinalIgnoreCase) >= 0)
                         {
-                            if (texto.IndexOf(planejador, StringComparison.OrdinalIgnoreCase) >= 0)
+
+                            pdfOrigem.CopyPagesTo(i, i, pdfDestino);
+
+                            foreach (var planejador in planejadores)
                             {
-                                richtxtPainel.AppendText($"Planejador '{planejador}' encontrado na página {i} da ordem de compra {ordemcompra}.\n");
-                                richtxtPainel.ScrollToCaret();
-                                if(planejador.Contains("PINTURA ACESSORIOS", StringComparison.OrdinalIgnoreCase) && !armazenarSubPlanejadores.Contains("P.A"))
-                                    armazenarSubPlanejadores += "P.A | ";
-                                else if (!armazenarSubPlanejadores.Contains(planejador.Substring(planejador.IndexOf(@"-") + 2, 1)))
-                                    armazenarSubPlanejadores += planejador.Substring(planejador.IndexOf(@"-") + 2, 1) +  " | ";
-                                if (!armazenarPlanejadores.Contains(planejador))
-                                    armazenarPlanejadores += planejador + " | ";
+                                if (texto.IndexOf(planejador, StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    richtxtPainel.AppendText($"'{planejador}' encontrado na página {i} da ordem de compra {ordemcompra}.\n\n");
+                                    richtxtPainel.ScrollToCaret();
+                                    if (planejador.Contains("PINTURA ACESSORIOS", StringComparison.OrdinalIgnoreCase) && !armazenarSubPlanejadores.Contains("P.A"))
+                                        armazenarSubPlanejadores += "P.A | ";
+                                    else if (!armazenarSubPlanejadores.Contains(planejador.Substring(planejador.IndexOf(@"-") + 2, 1)))
+                                        armazenarSubPlanejadores += planejador.Substring(planejador.IndexOf(@"-") + 2, 1) + " | ";
+                                    if (!armazenarPlanejadores.Contains(planejador))
+                                        armazenarPlanejadores += planejador + " | ";
 
+                                }
                             }
+
+                            richtxtPainel.AppendText($"Página {i} adicionada em: {ordemcompra}\n");
+                            richtxtPainel.ScrollToCaret();
+                            encontrou = true;
+
                         }
-
-                        richtxtPainel.AppendText($"Página {i} adicionada em: {ordemcompra}\nSalvo em: {destino}\n");
-                        richtxtPainel.ScrollToCaret();
-                        encontrou = true;
-
-                    }
-                    else if (texto.Contains(numContrato) && texto.Contains(nomeAmbiente))
-                    {
-
-                        pdfOrigem.CopyPagesTo(i, i, pdfDestino);
-
-                        foreach (var planejador in planejadores)
+                        else if (texto.Contains(numContrato) && texto.Contains(nomeAmbiente))
                         {
-                            if (texto.IndexOf(planejador, StringComparison.OrdinalIgnoreCase) >= 0)
+
+                            pdfOrigem.CopyPagesTo(i, i, pdfDestino);
+
+                            foreach (var planejador in planejadores)
                             {
-                                richtxtPainel.AppendText($"Planejador '{planejador}' encontrado na página {i} da ordem de compra {ordemcompra}.\n");
-                                richtxtPainel.ScrollToCaret();
-                                if (planejador.Contains("PINTURA ACESSORIOS", StringComparison.OrdinalIgnoreCase) && !armazenarSubPlanejadores.Contains("P.A"))
-                                    armazenarSubPlanejadores += "P.A | ";
-                                else if (!armazenarSubPlanejadores.Contains(planejador.Substring(planejador.IndexOf(@"-") + 2, 1)))
-                                    armazenarSubPlanejadores += planejador.Substring(planejador.IndexOf(@"-") + 2, 1) + " | ";
-                                if (!armazenarPlanejadores.Contains(planejador))
-                                    armazenarPlanejadores += planejador + " | ";
+                                if (texto.IndexOf(planejador, StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    richtxtPainel.AppendText($"'{planejador}' encontrado na página {i} da ordem de compra {ordemcompra}.\n\n");
+                                    richtxtPainel.ScrollToCaret();
+                                    if (planejador.Contains("PINTURA ACESSORIOS", StringComparison.OrdinalIgnoreCase) && !armazenarSubPlanejadores.Contains("P.A"))
+                                        armazenarSubPlanejadores += "P.A | ";
+                                    else if (!armazenarSubPlanejadores.Contains(planejador.Substring(planejador.IndexOf(@"-") + 2, 1)))
+                                        armazenarSubPlanejadores += planejador.Substring(planejador.IndexOf(@"-") + 2, 1) + " | ";
+                                    if (!armazenarPlanejadores.Contains(planejador))
+                                        armazenarPlanejadores += planejador + " | ";
 
+                                }
                             }
+
+                            richtxtPainel.AppendText($"Página {i} adicionada em: {ordemcompra}\n");
+
+                            encontrou = true;
+
                         }
-
-                        richtxtPainel.AppendText($"Página {i} adicionada em: {ordemcompra}\nSalvo em: {destino}\n");
-                        richtxtPainel.ScrollToCaret();
-                        encontrou = true;
-
                     }
                 }
+                richtxtPainel.AppendText($"Salvo em: {destino}\n\n");
+                richtxtPainel.ScrollToCaret();
+                Armazenar armazenar = new Armazenar(ordemcompra, armazenarSubPlanejadores, armazenarPlanejadores);
+                listaArmazenar.Add(armazenar);
+                if (!encontrou)
+                    pastasNaoEncontradas.Add(ordemcompra);
+
+                // Se não encontrou nada, apaga PDF criado
+                if (!encontrou && File.Exists(destino))
+                    File.Delete(destino);
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Erro ao processar o PDF: {ex.Message}");
+                richtxtPainel.AppendText($"Erro ao processar o PDF: {ex.Message}\n\n");
+                richtxtPainel.ScrollToCaret();
+
+                // Log
+                string registro = $"{DateTime.Now}";
+                richtxtPainel.AppendText("Horário do registro: " + registro);
+                var textoLog = richtxtPainel.Text;
+                string caminhoLog = Path.Combine(pastaOrigem, "Separador de Lista de Planejador_Log.txt");
+                File.AppendAllText(caminhoLog, textoLog + Environment.NewLine);
+
             }
 
-            Armazenar armazenar = new Armazenar(ordemcompra, armazenarSubPlanejadores, armazenarPlanejadores);
-            listaArmazenar.Add(armazenar);
-            if (!encontrou)
-                pastasNaoEncontradas.Add(ordemcompra);
-                
-            // Se não encontrou nada, apaga PDF criado
-            if (!encontrou && File.Exists(destino))
-                File.Delete(destino);
 
-            
         }
 
         private void btnCarregarPDF_Click(object sender, EventArgs e)
@@ -351,6 +392,44 @@ namespace Separador_de_Listas_de_Planejadores
 
         }
 
+        public void CriarPDFAncoragem()
+        {
+            richtxtPainel.AppendText($"Criando PDF de ancoragem...\n");
+            try
+            {
+                using (var pdfOrigem = new iText.Kernel.Pdf.PdfDocument(new iText.Kernel.Pdf.PdfReader(origem)))
+                using (var pdfAncoragens = new iText.Kernel.Pdf.PdfDocument(new iText.Kernel.Pdf.PdfWriter(destinoAncoragem)))
+                {
+                    for (int i = 1; i <= pdfOrigem.GetNumberOfPages(); i++)
+                    {
+                        var strategy = new iText.Kernel.Pdf.Canvas.Parser.Listener.SimpleTextExtractionStrategy();
+                        string texto = iText.Kernel.Pdf.Canvas.Parser.PdfTextExtractor.GetTextFromPage(pdfOrigem.GetPage(i), strategy);
+
+                        if (texto.IndexOf("ANAP999001", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            pdfOrigem.CopyPagesTo(i, i, pdfAncoragens);
+                            richtxtPainel.AppendText($"Página de ancoragem encontrada na página {i}.\n");
+                            richtxtPainel.ScrollToCaret();
+
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Erro ao processar o PDF: {ex.Message}");
+                richtxtPainel.AppendText($"Erro ao processar o PDF: {ex.Message}\n\n");
+                richtxtPainel.ScrollToCaret();
+
+                // Log
+                string registro = $"{DateTime.Now}";
+                richtxtPainel.AppendText("Horário do registro: " + registro);
+                var textoLog = richtxtPainel.Text;
+                string caminhoLog = Path.Combine(pastaOrigem, "Separador de Lista de Planejador_Log.txt");
+                File.AppendAllText(caminhoLog, textoLog + Environment.NewLine);
+            }
+        }
+
         private void lblAgExcel_Click(object sender, EventArgs e)
         {
 
@@ -366,7 +445,7 @@ namespace Separador_de_Listas_de_Planejadores
             if (excelCarregado != true && pdfCarregado != true)
             {
                 lblStatus.Text = "Processando...";
-                Application.DoEvents();                
+                Application.DoEvents();
                 lblStatus.Text = "Processamento concluído!";
                 lblStatus.Text = "Ocioso";
                 MessageBox.Show("Por favor, carregue ambos os arquivos (Excel e PDF) antes de iniciar o processamento.");
@@ -391,16 +470,22 @@ namespace Separador_de_Listas_de_Planejadores
                 return;
 
             }
+
+            // Garante a limpeza da lista de ambientes toda vez que inicia o processo
+            listaArmazenar.Clear();
+
             foreach (var pedido in lista)
             {
                 CriarPDF(pedido);
+
             }
+            CriarPDFAncoragem();
             CriarExcel(listaArmazenar);
-            
+
             if (pastasNaoEncontradas.Count() > 0)
             {
                 richtxtPainel.AppendText("\n\n===== RESUMO FINAL =====\n\nPasta não localizada dos ambientes:\n\n");
-                foreach(var i in pastasNaoEncontradas)
+                foreach (var i in pastasNaoEncontradas)
                 {
                     richtxtPainel.AppendText($"\n{i}\n");
                     richtxtPainel.ScrollToCaret();
@@ -412,9 +497,20 @@ namespace Separador_de_Listas_de_Planejadores
             else
                 richtxtPainel.AppendText("\n\nTodos os pedidos foram encontrado suas pastas. 🗸 \n\n");
 
-            richtxtPainel.AppendText("\n\nProcesso finalizado! ✅\n\n");
+            richtxtPainel.AppendText("\n\nProcesso finalizado! ✅\n\n * Log gerado na pasta de origem\n\n");
             richtxtPainel.ScrollToCaret();
+
+            // Log
+            string registro = $"{DateTime.Now}";
+            richtxtPainel.AppendText("Horário do registro: " + registro);
+            var textoLog = richtxtPainel.Text;
+            string caminhoLog = Path.Combine(pastaOrigem, "Separador de Lista de Planejador_Log.txt");
+            File.AppendAllText(caminhoLog, textoLog + Environment.NewLine);
+
+            // Status finalizado
             lblStatus.Text = "Processo Concluído! ✅";
+
+
 
 
         }
@@ -463,6 +559,12 @@ namespace Separador_de_Listas_de_Planejadores
         private void lblStatus_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void btnAtualizacoes_Click(object sender, EventArgs e)
+        {
+            FormAtualizacoes formAtualizacoes = new FormAtualizacoes();
+            formAtualizacoes.ShowDialog();
         }
     }
 }
