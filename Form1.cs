@@ -44,14 +44,16 @@ namespace Separador_de_Listas_de_Planejadores
         public class Armazenar
         {
             // Propriedades públicas
+            public string ERP { get; set; }
             public string OrdemCompra { get; set; }
             public string SubPlanejadores { get; set; }
             public string Planejadores { get; set; }
 
 
             // Construtor
-            public Armazenar(string ordemcompra, string subplanejadores, string planejadores)
+            public Armazenar(string erp,string ordemcompra, string subplanejadores, string planejadores)
             {
+                ERP = erp;
                 OrdemCompra = ordemcompra;
                 SubPlanejadores = subplanejadores;
                 Planejadores = planejadores;
@@ -61,6 +63,7 @@ namespace Separador_de_Listas_de_Planejadores
 
         public List<string> lista = new List<string>();
         public List<string> planejadores = new List<string>();
+        public List<string> ListaERP = new List<string>();
         List<string> LerExcel(string caminho)
         {
             var lista = new List<string>(); // garante que a lista começa vazia
@@ -76,6 +79,9 @@ namespace Separador_de_Listas_de_Planejadores
                             string valor = row.Cell(4).GetString().Trim();
                             if (!string.IsNullOrEmpty(valor))
                                 lista.Add(valor);
+                            string valorERP = row.Cell(2).GetString().Trim();
+                            if (!string.IsNullOrEmpty(valorERP))
+                                ListaERP.Add(valorERP);
                         }
                         catch (Exception exCell)
                         {
@@ -105,6 +111,7 @@ namespace Separador_de_Listas_de_Planejadores
             if (ofd.ShowDialog() == DialogResult.OK)
             {
                 lista = LerExcel(ofd.FileName);
+
                 foreach (var item in lista)
                 {
                     if (!item.Contains(" - "))
@@ -129,7 +136,9 @@ namespace Separador_de_Listas_de_Planejadores
 
 
                 int qntdAmbientes = 0;
+
                 richtxtPainel.AppendText("Arquivo:" + ofd.FileName + "\n\n");
+
                 foreach (var item in lista)
                 {
                     qntdAmbientes++;
@@ -333,7 +342,17 @@ namespace Separador_de_Listas_de_Planejadores
                 }
                 richtxtPainel.AppendText($"Salvo em: {destino}\n\n");
                 richtxtPainel.ScrollToCaret();
-                Armazenar armazenar = new Armazenar(ordemcompra, armazenarSubPlanejadores, armazenarPlanejadores);
+                var numERP = "";
+                foreach (var erp in ListaERP)
+                {
+
+                    var index = lista.IndexOf(ordemcompra);
+                    if (ListaERP.IndexOf(erp) == index)
+                    {
+                        numERP = erp; break;
+                    }
+                }
+                Armazenar armazenar = new Armazenar(numERP, ordemcompra, armazenarSubPlanejadores, armazenarPlanejadores);
                 listaArmazenar.Add(armazenar);
                 if (!encontrou)
                     pastasNaoEncontradas.Add(ordemcompra);
@@ -524,17 +543,19 @@ namespace Separador_de_Listas_de_Planejadores
                     var worksheet = workbook.Worksheets.Add("Pedidos");
 
                     // Cabeçalho
-                    worksheet.Cell(1, 1).Value = "Ordem de Compra";
-                    worksheet.Cell(1, 2).Value = "Sub Planejadores";
-                    worksheet.Cell(1, 3).Value = "Planejadores";
+                    worksheet.Cell(1, 1).Value = "ERP";
+                    worksheet.Cell(1, 2).Value = "Ordem de Compra";
+                    worksheet.Cell(1, 3).Value = "Sub Planejadores";
+                    worksheet.Cell(1, 4).Value = "Planejadores";
 
                     // Preencher linhas
                     int linha = 2;
                     foreach (var item in listaArmazenar)
                     {
-                        worksheet.Cell(linha, 1).Value = item.OrdemCompra;
-                        worksheet.Cell(linha, 2).Value = item.SubPlanejadores; // corrigido índice
-                        worksheet.Cell(linha, 3).Value = item.Planejadores;
+                        worksheet.Cell(linha, 1).Value = item.ERP;
+                        worksheet.Cell(linha, 2).Value = item.OrdemCompra;
+                        worksheet.Cell(linha, 3).Value = item.SubPlanejadores; // corrigido índice
+                        worksheet.Cell(linha, 4).Value = item.Planejadores;
                         linha++;
                     }
 

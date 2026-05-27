@@ -62,8 +62,18 @@ namespace Separador_de_Listas_de_Planejadores
             {
                 new Atualizacao // Versão 1.2
                 {
+                    Versao = "1.3",
+                    Data = DateTime.Parse("2026-05-27"),
+                    Mudancas = new List<string>
+                    {
+                        " * Melhoria: Inserção do número de ERP da exportação do Excel 'Pedidos e Planejadores.xlsx'.\n",
+                    }
+                },
+
+                new Atualizacao // Versão 1.2
+                {
                     Versao = "1.2",
-                    Data = DateTime.Parse("2026-01-01"),
+                    Data = DateTime.Parse("2026-05-27"),
                     Mudancas = new List<string>
                     {
                         " * Melhoria: Gera lista de planejador dos pedidos que contem ancoragem em um unico PDF, eliminando a analise do usuario em todos os pedidos, focando somente nos que contem.\n" +
