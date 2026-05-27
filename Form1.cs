@@ -19,7 +19,7 @@ namespace Separador_de_Listas_de_Planejadores
         public string pastaOrigem = "";
         public string nomeArquivo = "";
         public string destinoAncoragem = "";
-        public string versao = "1.2";
+        public string versao = "1.3";
 
         private List<Armazenar> listaArmazenar = new List<Armazenar>();
         List<string> pastasNaoEncontradas = new List<string>();
