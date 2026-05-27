@@ -25,7 +25,7 @@ namespace Separador_de_Listas_de_Planejadores
         {
             var form1 = new Form1();
             string versao = form1.versao;
-            this.Text = $"{versao} Notas de Atualização";
+            this.Text = $"[{versao}] - Notas de Atualização";
             this.Size = new System.Drawing.Size(500, 400);
             this.StartPosition = FormStartPosition.CenterParent;
 
@@ -60,7 +60,16 @@ namespace Separador_de_Listas_de_Planejadores
             // Lista de atualizações
             var lista = new List<Atualizacao>
             {
-                new Atualizacao // Versão 1.2
+                new Atualizacao // Versão 1.4
+                {
+                    Versao = "1.4",
+                    Data = DateTime.Parse("2026-05-27"),
+                    Mudancas = new List<string>
+                    {
+                        " * Melhoria: É gerado uma lista de planejador com os ambientes que contém tela tensionada (CÓD: TLTE002001) na mesma pasta da lista de planejador geral.\n",
+                    }
+                },
+                new Atualizacao // Versão 1.3
                 {
                     Versao = "1.3",
                     Data = DateTime.Parse("2026-05-27"),

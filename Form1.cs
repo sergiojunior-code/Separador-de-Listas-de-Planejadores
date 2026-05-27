@@ -1,9 +1,12 @@
 ﻿using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Drawing;
 using DocumentFormat.OpenXml.Drawing.Diagrams;
 using DocumentFormat.OpenXml.Spreadsheet;
 using iText.Kernel.Pdf.Canvas.Parser;
 using iText.Kernel.Pdf.Canvas.Parser.Listener;
 using System.Runtime.CompilerServices;
+using Path = System.IO.Path;
+
 
 namespace Separador_de_Listas_de_Planejadores
 {
@@ -19,7 +22,8 @@ namespace Separador_de_Listas_de_Planejadores
         public string pastaOrigem = "";
         public string nomeArquivo = "";
         public string destinoAncoragem = "";
-        public string versao = "1.3";
+        public string destinoTensionada = "";
+        public string versao = "1.4";
 
         private List<Armazenar> listaArmazenar = new List<Armazenar>();
         List<string> pastasNaoEncontradas = new List<string>();
@@ -37,7 +41,7 @@ namespace Separador_de_Listas_de_Planejadores
             planejadores.Add("Planejador: 31 - ILUMINACAO/ELETRICA");
             planejadores.Add("Planejador: 32 - ACRILICO");
             planejadores.Add("Planejador: 33 - ESPECIAIS");
-
+            this.Text = $"[{versao}] - Separador de Lista de Planejadores";
 
 
         }
@@ -175,6 +179,7 @@ namespace Separador_de_Listas_de_Planejadores
             nomeArquivo = Path.GetFileNameWithoutExtension(pdfPath);
 
             destinoAncoragem = origem.Replace(nomeArquivo, "Lista de Planejador - Ancoragens");
+            destinoTensionada = origem.Replace(nomeArquivo, "Lista de Planejador - Tela Tensionadas");
 
             // Extrair números do pedido
             //string fourDigits = ordemcompra.Substring(0, 4);
@@ -411,11 +416,93 @@ namespace Separador_de_Listas_de_Planejadores
 
         }
 
+        public void CriarPDFTensionada()
+        {
+            bool encontrouTensionada = false;
+            if (File.Exists(destinoTensionada))
+            {
+                try
+                {
+                    richtxtPainel.AppendText($"Arquivo de tela tensionada encontrado. Excluindo: {destinoTensionada}\n\n");
+                    File.Delete(destinoTensionada);
+                }
+                catch (Exception ex)
+                {
+                    richtxtPainel.AppendText($"Erro ao excluir arquivo existente: {ex.Message}\n\n");
+                }
+                richtxtPainel.ScrollToCaret();
+            }
+            richtxtPainel.AppendText("Criando PDF de tela tensionada...\n");
+            try
+            {
+                using (var pdfOrigem = new iText.Kernel.Pdf.PdfDocument(new iText.Kernel.Pdf.PdfReader(origem)))
+                using (var pdfTensionadas = new iText.Kernel.Pdf.PdfDocument(new iText.Kernel.Pdf.PdfWriter(destinoTensionada)))
+                {
+                    for (int i = 1; i <= pdfOrigem.GetNumberOfPages(); i++)
+                    {
+                        var strategy = new iText.Kernel.Pdf.Canvas.Parser.Listener.SimpleTextExtractionStrategy();
+                        string texto = iText.Kernel.Pdf.Canvas.Parser.PdfTextExtractor.GetTextFromPage(pdfOrigem.GetPage(i), strategy);
+
+                        if (texto.IndexOf("TLTE002001", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            pdfOrigem.CopyPagesTo(i, i, pdfTensionadas);
+                            richtxtPainel.AppendText($"Página com tela tensionada encontrada na página {i}.\n");
+                            richtxtPainel.ScrollToCaret();
+
+                            encontrouTensionada = true;
+                        }
+                    }
+                }
+                richtxtPainel.AppendText("\n");
+                richtxtPainel.ScrollToCaret();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Erro ao processar o PDF: {ex.Message}");
+                richtxtPainel.AppendText($"Erro ao processar o PDF: {ex.Message}\n\n");
+                richtxtPainel.ScrollToCaret();
+
+                // Log
+                string registro = $"{DateTime.Now}";
+                richtxtPainel.AppendText("Horário do registro: " + registro);
+                var textoLog = richtxtPainel.Text;
+                string caminhoLog = System.IO.Path.Combine(pastaOrigem, "Separador de Lista de Planejador_Log.txt");
+                File.AppendAllText(caminhoLog, textoLog + Environment.NewLine);
+            }
+
+            if (!encontrouTensionada)
+            {
+                richtxtPainel.AppendText($"Nenhuma página com tela tensionada encontrada no PDF.\n\n");
+                richtxtPainel.ScrollToCaret();
+                File.Delete(destinoTensionada);
+            }
+            else
+            {
+                richtxtPainel.AppendText($"PDF de tela tensionada criado em: {destinoTensionada}\n\n");
+                richtxtPainel.ScrollToCaret();
+            }
+        }
+
         public void CriarPDFAncoragem()
         {
+            bool encontrouAncoragem = false;
             richtxtPainel.AppendText($"Criando PDF de ancoragem...\n");
             try
             {
+                if (File.Exists(destinoAncoragem))
+                {
+                    try
+                    {
+                        richtxtPainel.AppendText($"Arquivo de ancoragem encontrado. Excluindo: {destinoAncoragem}\n\n");
+                        File.Delete(destinoAncoragem);
+                    }
+                    catch (Exception ex)
+                    {
+                        richtxtPainel.AppendText($"Erro ao excluir arquivo existente: {ex.Message}\n\n");
+                    }
+                    richtxtPainel.ScrollToCaret();
+                }
+
                 using (var pdfOrigem = new iText.Kernel.Pdf.PdfDocument(new iText.Kernel.Pdf.PdfReader(origem)))
                 using (var pdfAncoragens = new iText.Kernel.Pdf.PdfDocument(new iText.Kernel.Pdf.PdfWriter(destinoAncoragem)))
                 {
@@ -428,11 +515,15 @@ namespace Separador_de_Listas_de_Planejadores
                         {
                             pdfOrigem.CopyPagesTo(i, i, pdfAncoragens);
                             richtxtPainel.AppendText($"Página de ancoragem encontrada na página {i}.\n");
-                            richtxtPainel.ScrollToCaret();
+                            
+
+                            encontrouAncoragem = true;
 
                         }
                     }
                 }
+                richtxtPainel.AppendText("\n"); 
+                richtxtPainel.ScrollToCaret();
             }
             catch (Exception ex)
             {
@@ -446,6 +537,17 @@ namespace Separador_de_Listas_de_Planejadores
                 var textoLog = richtxtPainel.Text;
                 string caminhoLog = Path.Combine(pastaOrigem, "Separador de Lista de Planejador_Log.txt");
                 File.AppendAllText(caminhoLog, textoLog + Environment.NewLine);
+            }
+            if(!encontrouAncoragem)
+            {
+                richtxtPainel.AppendText($"Nenhuma página de ancoragem encontrada no PDF.\n\n");
+                richtxtPainel.ScrollToCaret();
+                File.Delete(destinoAncoragem);
+            }
+            else
+            {
+                richtxtPainel.AppendText($"PDF de ancoragem criado em: {destinoAncoragem}\n\n");
+                richtxtPainel.ScrollToCaret();
             }
         }
 
@@ -499,6 +601,7 @@ namespace Separador_de_Listas_de_Planejadores
 
             }
             CriarPDFAncoragem();
+            CriarPDFTensionada();
             CriarExcel(listaArmazenar);
 
             if (pastasNaoEncontradas.Count() > 0)
